@@ -32,15 +32,12 @@ type KakaoPolyline = {
 type KakaoLatLng = {
   getLat: () => number;
   getLng: () => number;
-<<<<<<< HEAD
 };
 type KakaoRoadview = {
   setPanoId: (panoId: number, position: KakaoLatLng) => void;
 };
 type KakaoRoadviewClient = {
   getNearestPanoId: (position: KakaoLatLng, radius: number, callback: (panoId: number | null) => void) => void;
-=======
->>>>>>> parent of 1600b8c (룰렛 색상 수정)
 };
 
 declare global {
@@ -48,19 +45,12 @@ declare global {
     kakao: {
       maps: {
         load: (callback: () => void) => void;
-<<<<<<< HEAD
         Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number; draggable?: boolean; zoomable?: boolean; }) => KakaoMap;
         LatLng: new (lat: number, lng: number) => KakaoLatLng;
         Marker: new (options: { position: KakaoLatLng; }) => KakaoMarker;
         Polyline: new (options: { path: KakaoLatLng[]; strokeColor: string; strokeWeight: number; strokeOpacity: number; }) => KakaoPolyline;
         Roadview: new (container: HTMLElement) => KakaoRoadview;
         RoadviewClient: new () => KakaoRoadviewClient;
-=======
-        Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number; }) => KakaoMap;
-        LatLng: new (lat: number, lng: number) => KakaoLatLng;
-        Marker: new (options: { position: KakaoLatLng; }) => KakaoMarker;
-        Polyline: new (options: { path: KakaoLatLng[]; strokeColor: string; strokeWeight: number; strokeOpacity: number; }) => KakaoPolyline;
->>>>>>> parent of 1600b8c (룰렛 색상 수정)
       };
     };
   }
@@ -106,14 +96,10 @@ export default function Home() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDistance, setSelectedDistance] = useState<string>('800');
 
-<<<<<<< HEAD
   const [showRoadview, setShowRoadview] = useState(false); // 로드뷰 표시 상태
 
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const roadviewContainer = useRef<HTMLDivElement | null>(null); // 로드뷰 컨테이너 ref
-=======
-  const mapContainer = useRef<HTMLDivElement | null>(null);
->>>>>>> parent of 1600b8c (룰렛 색상 수정)
   const mapInstance = useRef<KakaoMap | null>(null);
   const markerInstance = useRef<KakaoMarker | null>(null);
   const polylineInstance = useRef<KakaoPolyline | null>(null);
@@ -133,13 +119,8 @@ export default function Home() {
 
     const script = document.createElement('script');
     script.id = scriptId;
-<<<<<<< HEAD
     // (수정!) 로드뷰 라이브러리를 함께 불러옵니다.
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=services,clusterer,drawing,roadview`;
-=======
-    // (수정!) 로드뷰 라이브러리 제거
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false`;
->>>>>>> parent of 1600b8c (룰렛 색상 수정)
     script.async = true;
     document.head.appendChild(script);
 
@@ -160,7 +141,6 @@ export default function Home() {
     }
   }, [isMapReady]);
 
-<<<<<<< HEAD
   // (추가!) 로드뷰를 그리는 useEffect
   useEffect(() => {
     if (showRoadview && recommendation && roadviewContainer.current && window.kakao) {
@@ -184,8 +164,6 @@ export default function Home() {
   }, [showRoadview, recommendation]);
 
 
-=======
->>>>>>> parent of 1600b8c (룰렛 색상 수정)
   const getNearbyRestaurants = async (latitude: number, longitude: number): Promise<KakaoPlaceItem[]> => {
     const query = selectedCategories.length > 0 ? selectedCategories.join(',') : '음식점';
     const radius = selectedDistance;
@@ -214,10 +192,7 @@ export default function Home() {
   const recommendProcess = async (isRoulette: boolean) => {
     setLoading(true);
     setRecommendation(null);
-<<<<<<< HEAD
     setShowRoadview(false); // 추천 시 로드뷰 숨김
-=======
->>>>>>> parent of 1600b8c (룰렛 색상 수정)
     if (markerInstance.current) markerInstance.current.setMap(null);
     if (polylineInstance.current) polylineInstance.current.setMap(null);
 
@@ -357,7 +332,6 @@ export default function Home() {
               </Dialog>
             </div>
             
-<<<<<<< HEAD
             {recommendation && (
               <div className="w-full max-w-sm space-y-4">
                 <Card className="w-full border shadow-sm">
@@ -396,29 +370,6 @@ export default function Home() {
               <Card className="w-full max-w-sm flex items-center justify-center h-40 text-gray-500 border shadow-sm">
                 <p>음식점을 추천받아보세요!</p>
               </Card>
-=======
-            {recommendation ? (
-              <Card className="w-full max-w-sm border shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl">{recommendation.place_name}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-gray-700 space-y-1">
-                  <p><strong>카테고리:</strong> {recommendation.category_name}</p>
-                  <p><strong>주소:</strong> {recommendation.road_address_name}</p>
-                </CardContent>
-                <CardFooter className="pt-3">
-                  <Button asChild className="w-full" variant="secondary">
-                    <a href={recommendation.place_url} target="_blank" rel="noopener noreferrer">
-                      카카오맵에서 상세보기
-                    </a>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ) : (
-                <Card className="w-full max-w-sm flex items-center justify-center h-40 text-gray-500 border shadow-sm">
-                    <p>음식점을 추천받아보세요!</p>
-                </Card>
->>>>>>> parent of 1600b8c (룰렛 색상 수정)
             )}
           </div>
         </div>
