@@ -19,42 +19,7 @@ import dynamic from 'next/dynamic';
 
 const Wheel = dynamic(() => import('react-custom-roulette').then(mod => mod.Wheel), { ssr: false });
 
-// any 타입을 모두 제거하고 구체적인 타입으로 정의합니다.
-type KakaoMap = {
-  setCenter: (latlng: KakaoLatLng) => void;
-};
-type KakaoMarker = {
-  setMap: (map: KakaoMap | null) => void;
-};
-type KakaoPolyline = {
-  setMap: (map: KakaoMap | null) => void;
-};
-type KakaoLatLng = {
-  getLat: () => number;
-  getLng: () => number;
-};
-type KakaoRoadview = {
-  setPanoId: (panoId: number, position: KakaoLatLng) => void;
-};
-type KakaoRoadviewClient = {
-  getNearestPanoId: (position: KakaoLatLng, radius: number, callback: (panoId: number | null) => void) => void;
-};
-
-declare global {
-  interface Window {
-    kakao: {
-      maps: {
-        load: (callback: () => void) => void;
-        Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number; draggable?: boolean; zoomable?: boolean; }) => KakaoMap;
-        LatLng: new (lat: number, lng: number) => KakaoLatLng;
-        Marker: new (options: { position: KakaoLatLng; }) => KakaoMarker;
-        Polyline: new (options: { path: KakaoLatLng[]; strokeColor: string; strokeWeight: number; strokeOpacity: number; }) => KakaoPolyline;
-        Roadview: new (container: HTMLElement) => KakaoRoadview;
-        RoadviewClient: new () => KakaoRoadviewClient;
-      };
-    };
-  }
-}
+// The KakaoMap types are now in src/types/kakao.d.ts and should be picked up globally
 
 interface KakaoPlaceItem {
   place_name: string;
@@ -91,78 +56,53 @@ export default function Home() {
   
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
-  const [userLocation, setUserLocation] = useState<KakaoLatLng | null>(null);
+  const [userLocation, setUserLocation] = useState<any | null>(null);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDistance, setSelectedDistance] = useState<string>('800');
 
-  const [showRoadview, setShowRoadview] = useState(false); // 로드뷰 표시 상태
-
   const mapContainer = useRef<HTMLDivElement | null>(null);
-  const roadviewContainer = useRef<HTMLDivElement | null>(null); // 로드뷰 컨테이너 ref
-  const mapInstance = useRef<KakaoMap | null>(null);
-  const markerInstance = useRef<KakaoMarker | null>(null);
-  const polylineInstance = useRef<KakaoPolyline | null>(null);
+  const mapInstance = useRef<any | null>(null);
+  const markerInstance = useRef<any | null>(null);
+  const polylineInstance = useRef<any | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
 
   useEffect(() => {
     const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAOMAP_JS_KEY;
-    if (!KAKAO_JS_KEY) return;
     
     const scriptId = 'kakao-maps-script';
     if (document.getElementById(scriptId)) {
-        if (window.kakao && window.kakao.maps) setIsMapReady(true);
+        if ((window as any).kakao && (window as any).kakao.maps) {
+          setIsMapReady(true);
+        }
         return;
     }
 
     const script = document.createElement('script');
     script.id = scriptId;
-    // (수정!) 로드뷰 라이브러리를 함께 불러옵니다.
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=services,clusterer,drawing,roadview`;
-    script.async = true;
-    document.head.appendChild(script);
-
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=services`;
+    
     script.onload = () => {
-      window.kakao.maps.load(() => {
+      (window as any).kakao.maps.load(() => {
         setIsMapReady(true);
       });
     };
+
+    document.head.appendChild(script);
+
   }, []);
   
   useEffect(() => {
     if (isMapReady && mapContainer.current && !mapInstance.current) {
       const mapOption = {
-        center: new window.kakao.maps.LatLng(36.3504, 127.3845),
+        center: new (window as any).kakao.maps.LatLng(36.3504, 127.3845),
         level: 3,
       };
-      mapInstance.current = new window.kakao.maps.Map(mapContainer.current, mapOption);
+      mapInstance.current = new (window as any).kakao.maps.Map(mapContainer.current, mapOption);
     }
   }, [isMapReady]);
-
-  // (추가!) 로드뷰를 그리는 useEffect
-  useEffect(() => {
-    if (showRoadview && recommendation && roadviewContainer.current && window.kakao) {
-      const placePosition = new window.kakao.maps.LatLng(Number(recommendation.y), Number(recommendation.x));
-      const roadviewClient = new window.kakao.maps.RoadviewClient();
-      
-      roadviewContainer.current.innerHTML = '';
-
-      roadviewClient.getNearestPanoId(placePosition, 50, (panoId) => {
-        if (panoId && roadviewContainer.current) {
-          roadviewContainer.current.style.display = 'block';
-          new window.kakao.maps.Roadview(roadviewContainer.current).setPanoId(panoId, placePosition);
-        } else if(roadviewContainer.current) {
-          roadviewContainer.current.style.display = 'flex';
-          roadviewContainer.current.style.alignItems = 'center';
-          roadviewContainer.current.style.justifyContent = 'center';
-          roadviewContainer.current.innerHTML = '<p class="text-gray-500">로드뷰 정보가 없습니다.</p>';
-        }
-      });
-    }
-  }, [showRoadview, recommendation]);
-
 
   const getNearbyRestaurants = async (latitude: number, longitude: number): Promise<KakaoPlaceItem[]> => {
     const query = selectedCategories.length > 0 ? selectedCategories.join(',') : '음식점';
@@ -192,13 +132,12 @@ export default function Home() {
   const recommendProcess = async (isRoulette: boolean) => {
     setLoading(true);
     setRecommendation(null);
-    setShowRoadview(false); // 추천 시 로드뷰 숨김
     if (markerInstance.current) markerInstance.current.setMap(null);
     if (polylineInstance.current) polylineInstance.current.setMap(null);
 
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
-      const currentLocation = new window.kakao.maps.LatLng(latitude, longitude);
+      const currentLocation = new (window as any).kakao.maps.LatLng(latitude, longitude);
       setUserLocation(currentLocation);
       if (mapInstance.current) {
         mapInstance.current.setCenter(currentLocation);
@@ -242,15 +181,17 @@ export default function Home() {
     setMustSpin(true);
   };
 
-  const updateMapAndCard = (place: KakaoPlaceItem, currentLoc: KakaoLatLng) => {
+  const updateMapAndCard = (place: KakaoPlaceItem, currentLoc: any) => {
     setRecommendation(place);
     if (mapInstance.current) {
-      const placePosition = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
+      const placePosition = new (window as any).kakao.maps.LatLng(Number(place.y), Number(place.x));
       
-      markerInstance.current = new window.kakao.maps.Marker({ position: placePosition });
+      if (markerInstance.current) markerInstance.current.setMap(null);
+      markerInstance.current = new (window as any).kakao.maps.Marker({ position: placePosition });
       markerInstance.current.setMap(mapInstance.current);
 
-      polylineInstance.current = new window.kakao.maps.Polyline({
+      if (polylineInstance.current) polylineInstance.current.setMap(null);
+      polylineInstance.current = new (window as any).kakao.maps.Polyline({
         path: [currentLoc, placePosition],
         strokeWeight: 5,
         strokeColor: '#007BFF',
@@ -332,41 +273,24 @@ export default function Home() {
               </Dialog>
             </div>
             
-            {recommendation && (
-              <div className="w-full max-w-sm space-y-4">
-                <Card className="w-full border shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-xl">{recommendation.place_name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-gray-700 space-y-1">
-                    <p><strong>카테고리:</strong> {recommendation.category_name}</p>
-                    <p><strong>주소:</strong> {recommendation.road_address_name}</p>
-                  </CardContent>
-                  <CardFooter className="pt-3 flex flex-col gap-2">
-                    {/* (수정!) 로드뷰 토글 버튼 */}
-                    <Button onClick={() => setShowRoadview(!showRoadview)} className="w-full" variant="outline">
-                      {showRoadview ? '가게 모습 숨기기' : '가게 모습 보기'}
-                    </Button>
-                    <Button asChild className="w-full" variant="secondary">
-                      <a href={recommendation.place_url} target="_blank" rel="noopener noreferrer">
-                        카카오맵에서 상세보기
-                      </a>
-                    </Button>
-                  </CardFooter>
-                </Card>
-
-                {/* (수정!) 로드뷰를 표시할 새로운 카드 */}
-                {showRoadview && (
-                  <Card className="w-full border shadow-sm">
-                    <CardContent className="p-0">
-                      <div ref={roadviewContainer} className="w-full h-80 rounded-lg"></div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
-            
-            {!recommendation && (
+            {recommendation ? (
+              <Card className="w-full max-w-sm border shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl">{recommendation.place_name}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-gray-700 space-y-1">
+                  <p><strong>카테고리:</strong> {recommendation.category_name}</p>
+                  <p><strong>주소:</strong> {recommendation.road_address_name}</p>
+                </CardContent>
+                <CardFooter className="pt-3 flex flex-col gap-2">
+                  <Button asChild className="w-full" variant="secondary">
+                    <a href={recommendation.place_url} target="_blank" rel="noopener noreferrer">
+                      카카오맵에서 상세보기
+                    </a>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ) : (
               <Card className="w-full max-w-sm flex items-center justify-center h-40 text-gray-500 border shadow-sm">
                 <p>음식점을 추천받아보세요!</p>
               </Card>
